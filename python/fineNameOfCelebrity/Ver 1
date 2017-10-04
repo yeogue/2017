@@ -1,0 +1,103 @@
+### import part ###
+from bs4 import BeautifulSoup
+from urllib.request import urlopen
+import re
+
+
+### define part ###
+def _Encoding(x):
+    return x.encode("utf-8")
+
+
+###
+def _Filter(BS):
+    ON = re.sub(" \|((?!\|).)*$", "", BS.get_text(), 0)
+    EN = re.sub("^.*\| ", "", BS.get_text(), 0)
+    EN = re.sub("\(", "", EN, 0)
+    EN = re.sub("\)", "", EN, 0)
+    JrSr = re.compile(".*[(Jr\.)(Sr\.)(I+)]$")
+    ON = re.sub("^.*\| ", "", ON, 0)
+    ON = re.sub("\(", "", ON, 0)
+    ON = re.sub("\)", "", ON, 0)
+    if JrSr.match(ON):
+        ON = re.sub("(Sr\.)(Jr\.)(I+)", "", ON, 0)
+        F = list(ON.split(' '))[0]
+        B = list(ON.split(' '))[2]
+        ON = str(F) + ' ' + str(B)
+    if len(ON.split(' ')) == 3:
+        F = list(ON.split(' '))[0]
+        B = list(ON.split(' '))[2]
+        ON = str(F) + ' ' + str(B)
+    NBEN = re.sub(" ", "", EN, 0)
+    NBON = re.sub(" ", "", ON, 0)
+
+    return EN, ON, NBEN, NBON
+
+
+###
+def _HexToStr(x, y):
+    for n in x:
+        y = str(y) + str(hex(n))
+    y = re.sub("0x", "%", y, 0)
+
+    return y
+
+
+###
+def _GetName(x):
+    a = urlopen("https://search.naver.com/search.naver?where=nexearch&query=" + x + "&sm=top_hty&fbm=1&ie=utf8")
+    b = BeautifulSoup(a, "html.parser").find("span", {"class": "name_more"})
+
+    return b
+
+
+### main part ###
+while 1:
+    ##########################
+    print("")
+    print("[input phase]")
+    ##########################
+    Name = input("검색할 인물명을 입력해주세요: ")
+    HexToStrName = ""
+    OriginalName = ""
+    EnglishName = ""
+    NoBlankOriginalName = ""
+    NoBlankEnglishName = ""
+    UrlName = ""
+    if Name == '':
+        break
+    ############################
+    print("[page parsing...]")
+    ############################
+    EncodeName = _Encoding(Name)
+    UrlName = _HexToStr(EncodeName, UrlName)
+    BS = _GetName(UrlName)
+    ############################
+    print("[filtering...]")
+    #############################
+    try:
+        EnglishName, OriginalName, NoBlankEnglishName, NoBlankOriginalName = _Filter(BS)
+        if OriginalName != EnglishName:
+            print(OriginalName + " | " + EnglishName)
+        else:
+            print(OriginalName)
+
+    #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    #
+    #    if OriginalName != EnglishName:
+    #        if OriginalName != NoBlankOriginalName:
+    #            print(Name + " | " + OriginalName + " | " + EnglishName + " | " + NoBlankOriginalName + " | " + NoBlankEnglishName)
+    #        elif EnglishName != NoBlankEnglishName:
+    #            print(Name + " | " + OriginalName + " | " + EnglishName + " | " + NoBlankEnglishName)
+    #        else:
+    #            print(Name + " | " + OriginalName + " | " + EnglishName)
+    #    else:
+    #        print(Name + " | " + OriginalName + " | " + EnglishName)
+    #
+    #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    except AttributeError as e:
+        print(e)
+    ##########################
+    print("[complete]")
+    ##########################

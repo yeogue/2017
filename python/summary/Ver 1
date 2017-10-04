@@ -1,0 +1,128 @@
+# -*- coding: utf-8 -*-
+### import part ###
+import re
+import operator
+from konlpy.tag import Twitter; t = Twitter()
+import sys
+
+### define part ###
+def contents():
+    postFileOpen = open("C:\\Users\\yeogue\\Desktop\\contents.txt") # change file position
+    post = postFileOpen.read()
+    post = re.sub("[\.]", '.\n', post) # close Normalization
+    words = t.pos(post)
+    wordList = [[0, 0, 0]]
+    wordNameList = []
+    sentences = post.split('\n')
+    sentencesListMax = len(sentences)
+    listWindow = 0
+    for i in range(sentencesListMax):
+        if sentences[listWindow] == '':
+            del sentences[listWindow]
+            listWindow -= 1
+        listWindow += 1
+    for i in range(len(words)):
+        if len(words[i][0]) > 1:
+            if words[i][0] not in wordNameList and words[i][1] == "Noun": # add word Noun type only
+                words[i] = list(words[i])
+                words[i].append(1)
+                wordList.append(words[i])
+                wordNameList.append(words[i][0])
+            else:
+                for j in range(len(wordList)): # already appended word, just add 1 count
+                    if words[i][0] == wordList[j][0]:
+                        wordList[j][2] += 1
+        else:
+            pass
+    return sorted(wordList, key=operator.itemgetter(2), reverse=True), sentences # return sorted word list, sentences
+
+###
+def summaryPrint(sortedWordList, sentences, summaryLine):
+    sentenceCheck = []
+    finalSummaryList = []
+    i = 0
+    while len(finalSummaryList) != summaryLine:
+        for sentence in sentences:
+            if sortedWordList[i][0] in sentence: # used high frequency word in sentence
+                if sortedWordList[i+1][0] in sentence: # used second high frequency word in sentence
+                    if sentence not in sentenceCheck:
+                        finalSummaryList.append(sentence)
+                        sentenceCheck.append(sentence)
+                        break
+                    else:
+                        pass
+                else:
+                    if sentence not in sentenceCheck:
+                        finalSummaryList.append(sentence)
+                        sentenceCheck.append(sentence)
+                        break
+                    else:
+                        pass
+            else:
+                pass
+        i += 1
+    # define print summary sentences to print previously sentence first
+    summaryLineCount = 0
+    for sentencesCount in range(len(sentences)):
+        if summaryLineCount >= int(len(finalSummaryList)):
+            break
+        for FSL in finalSummaryList:
+            if FSL in sentences[sentencesCount]:
+                print(summaryLineCount+1, ':', sentences[sentencesCount])
+                summaryLineCount += 1
+                break
+
+###
+def autoSetSummaryLine(sortedWordList):
+    summaryLine = 0
+    checkSameFrequencyWords = 0 # auto input summaryLine
+    for i in range(len(sortedWordList)):
+        if checkSameFrequencyWords < 3: # to print more important sentences, remove can not judge important words
+            if sortedWordList[i][2] == sortedWordList[i+1][2]:
+                checkSameFrequencyWords += 1
+        else:
+            checkSameFrequencyWords = sortedWordList[i][2]
+            break
+    while 1:
+        if int(sortedWordList[summaryLine][2]) > int(checkSameFrequencyWords):
+            summaryLine += 1
+        else:
+            break
+    return summaryLine
+
+
+### main part ###
+######################
+print("[read txt file...]")
+######################
+sortedWordList, sentences = contents()
+
+#>>>>>>>>>>>>>>>>>>>>>
+#
+# print(sortedWordList) # sorted words check
+#
+#>>>>>>>>>>>>>>>>>>>>>
+
+#######################
+if len(sentences) > 7:
+    print("[input summary line(auto)]")
+else:
+    print("문장이 적어 요약할 수 없습니다.")
+    sys.exit()
+#######################
+summaryLine = autoSetSummaryLine(sortedWordList) # if you want custom input summary line, replace autoSetSummaryLine to int(input())
+
+#>>>>>>>>>>>>>>>>>>>>>
+#
+# print(len(sentences)) # all sentence lines check
+# print(summaryLine) # summary lines check
+#
+#>>>>>>>>>>>>>>>>>>>>>
+
+######################
+print("[summarizing...]")
+######################
+summaryPrint(sortedWordList, sentences, summaryLine)
+######################
+print("[complete]")
+#######################
